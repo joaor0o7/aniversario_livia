@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:aniversario_lilivs/pages/home_page.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Hive.initFlutter(); // Inicializa o Hive
+  await Hive.openBox('versiculosBox');
   runApp(const MyApp());
 }
 

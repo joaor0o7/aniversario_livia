@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
 import 'package:aniversario_lilivs/helpers/versiculo_helper.dart';
 import 'package:aniversario_lilivs/pages/versiculos_page.dart';
-import 'package:aniversario_lilivs/pages/capituloPage.dart';
 
 class PaginaVersiculos extends StatelessWidget {
   const PaginaVersiculos({super.key});
@@ -14,7 +14,6 @@ class PaginaVersiculos extends StatelessWidget {
         backgroundColor: Colors.pink[200],
       ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
-        // Carregando os versículos
         future: VersiculoHelper.carregar30Versiculos(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -26,55 +25,74 @@ class PaginaVersiculos extends StatelessWidget {
           }
 
           final versiculos = snapshot.data!;
+          final box = Hive.box('versiculosBox');
 
-          return Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: List.generate(versiculos.length, (index) {
-                final v = versiculos[index];
-                final texto = v['texto'];
-                final livro = v['livro'];
-                final capitulo = v['capitulo'];
-                final versiculo = v['versiculo'];
+          return SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: ListView(
+                children: [
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: List.generate(versiculos.length, (index) {
+                      final dia = index + 1;
+                      final chave = 'dia_$dia';
 
-                return SizedBox(
-                  width: 80,
-                  height: 40,
-                  child: Column(
-                    children: [
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.pink[100],
-                          foregroundColor: Colors.black,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          textStyle: const TextStyle(fontSize: 16),
-                        ),
-                        onPressed: () {
-                          // Passando corretamente os parâmetros para a VersiculoPage
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder:
-                                  (_) => VersiculoPage(
-                                    dia: index + 1,
-                                    versiculo:
-                                        '$texto\n\n($livro $capitulo:$versiculo)',
-                                    livro: livro, // Passando o livro
-                                    capitulo: capitulo, // Passando o capítulo
-                                  ),
+                      final salvo = box.get(chave);
+
+                      final texto =
+                          salvo?['texto'] ?? versiculos[index]['texto'];
+                      final livro =
+                          salvo?['livro'] ?? versiculos[index]['livro'];
+                      final capitulo =
+                          salvo?['capitulo'] ?? versiculos[index]['capitulo'];
+                      final versiculo =
+                          salvo?['versiculo'] ?? versiculos[index]['versiculo'];
+
+                      return SizedBox(
+                        width: 80,
+                        height: 40,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.pink[100],
+                            foregroundColor: Colors.black,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                          );
-                        },
-                        child: Text('${index + 1}'),
-                      ),
-                    ],
+                            textStyle: const TextStyle(fontSize: 16),
+                          ),
+                          onPressed: () {
+                            if (salvo == null) {
+                              box.put(chave, {
+                                'texto': texto,
+                                'livro': livro,
+                                'capitulo': capitulo,
+                                'versiculo': versiculo,
+                              });
+                            }
+
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (_) => VersiculoPage(
+                                      dia: dia,
+                                      versiculo:
+                                          '$texto\n\n($livro $capitulo:$versiculo)',
+                                      livro: livro,
+                                      capitulo: capitulo,
+                                    ),
+                              ),
+                            );
+                          },
+                          child: Text('$dia'),
+                        ),
+                      );
+                    }),
                   ),
-                );
-              }),
+                ],
+              ),
             ),
           );
         },
